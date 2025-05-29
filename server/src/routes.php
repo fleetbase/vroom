@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix(config('vroom.api.routing.prefix', 'starter'))->namespace('Fleetbase\Vroom\Http\Controllers')->group(
+Route::prefix(config('vroom.api.routing.prefix', 'vroom'))->namespace('Fleetbase\Vroom\Http\Controllers')->group(
     function ($router) {
         /*
         |--------------------------------------------------------------------------
@@ -27,7 +27,8 @@ Route::prefix(config('vroom.api.routing.prefix', 'starter'))->namespace('Fleetba
                 $router->group(
                     ['prefix' => 'v1', 'middleware' => ['fleetbase.protected']],
                     function ($router) {
-                        // $router->fleetbaseRoutes('resource');
+                        $router->post('solve', 'VroomController@solve');
+                        $router->post('plan', 'VroomController@plan');
                     }
                 );
             }
