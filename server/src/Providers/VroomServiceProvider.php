@@ -51,5 +51,6 @@ class VroomServiceProvider extends CoreServiceProvider
         $this->registerExpansionsFrom(__DIR__ . '/../Expansions');
         $this->loadRoutesFrom(__DIR__ . '/../routes.php');
         $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/vroom.php', 'vroom');
     }
 }

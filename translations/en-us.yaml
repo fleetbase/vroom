@@ -1,2 +1,5 @@
-starter:
-  extension-name: Starter
+vroom:
+  extension-name: VROOM
+  settings:
+    title: Configure VROOM
+    api-key: VROOM API Key
