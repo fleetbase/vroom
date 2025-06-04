@@ -50,7 +50,6 @@ export default class VroomService extends RouteOptimizationInterfaceService {
 
         switch (context) {
             case 'create_order':
-                console.log('[waypoints]', waypoints);
                 task.vehicles = [await this.#createVehicle(order.driver_assigned)];
                 task.jobs = await all(waypoints.map((wp, idx) => this.#createJob(wp, idx + 1)));
                 break;
@@ -71,8 +70,6 @@ export default class VroomService extends RouteOptimizationInterfaceService {
         // object. Otherwise use the resolved vehicle.
         const vehicle = maybeVehicle ?? driverOrVehicle;
 
-        console.log('[vehicle]', vehicle);
-
         // Create vroom compatible instance
         return {
             id,
@@ -81,7 +78,6 @@ export default class VroomService extends RouteOptimizationInterfaceService {
     }
 
     async #createJob(waypoint, id = 1) {
-        console.log('[waypoint]', waypoint);
         return {
             id,
             location: waypoint.get('place.location.coordinates'),
