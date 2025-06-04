@@ -3,7 +3,6 @@
 namespace Fleetbase\Vroom\Support;
 
 use Fleetbase\Vroom\Exceptions\VroomApiException;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -27,7 +26,13 @@ class Vroom
     public function __construct()
     {
         $this->baseUri = config('vroom.base_uri', 'https://api.verso-optim.com/vrp/v1');
-        $this->apiKey  = config('vroom.api_key');
+    }
+
+    public function setApiKey(?string $apiKey)
+    {
+        $this->apiKey = $apiKey;
+
+        return $this;
     }
 
     /**

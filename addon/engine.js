@@ -3,6 +3,7 @@ import loadInitializers from 'ember-load-initializers';
 import Resolver from 'ember-resolver';
 import config from './config/environment';
 import services from '@fleetbase/ember-core/exports/services';
+import VroomSettingsComponent from './components/vroom-settings';
 
 const { modulePrefix } = config;
 const externalRoutes = ['console', 'extensions'];
@@ -23,6 +24,9 @@ export default class VroomEngine extends Engine {
         if (routeOptimization && vroom) {
             routeOptimization.register('vroom', vroom);
         }
+
+        // register settings component
+        universe.registerRenderableComponent(FLEETOPS_ENGINE_NAME, 'fleet-ops:template:settings:routing', VroomSettingsComponent);
     };
 }
 

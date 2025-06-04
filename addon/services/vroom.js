@@ -1,4 +1,5 @@
 import RouteOptimizationInterfaceService from '@fleetbase/fleetops-engine/services/route-optimization-interface';
+import polyline from '@fleetbase/ember-core/utils/polyline';
 import { inject as service } from '@ember/service';
 import { debug } from '@ember/debug';
 import { all } from 'rsvp';
@@ -8,14 +9,24 @@ export default class VroomService extends RouteOptimizationInterfaceService {
 
     @service modalsManager;
 
-    async optimize(params, options = {}) {
+    async optimize({ order, waypoints, context }, options = {}) {
         try {
-            const task = await this.#prepareTask(params);
-            console.log('[task]', task, options);
-            const result = await this.solve(task);
+            const task = await this.#prepareTask({ context, order, waypoints });
+            const result = await this.solve(task, options);
 
-            // do some processing and send back a optimized route
-            return result;
+            // handle processing for route result
+            const route = result.routes[0];
+            const geometry = polyline.decode(route.geometry);
+
+            // Sort waypoints in returned order with mapping by ID
+            const sortedWaypoints = route.steps
+                .map((step) => {
+                    if (step.type !== 'job') return null;
+                    return waypoints[step.id - 1];
+                })
+                .filter(Boolean);
+
+            return { sortedWaypoints, trip: { ...route, summary: result.summary }, route: geometry, result, engine: 'vroom' };
         } catch (err) {
             debug(`[VROOM] Error solving route optimization task : ${err.message}`);
             throw err;
@@ -52,20 +63,20 @@ export default class VroomService extends RouteOptimizationInterfaceService {
     }
 
     async #createVehicle(driverOrVehicle, id = 1) {
-        // Vehicle is a prop then its a driver and we should use their assigned vehicle
-        let vehicle;
-        if (driverOrVehicle.vehicle) {
-            vehicle = await driverOrVehicle.vehicle;
-        } else {
-            vehicle = driverOrVehicle;
-        }
+        // If `driverOrVehicle.vehicle` exists, await it; otherwise treat
+        // `driverOrVehicle` as the vehicle itself.
+        const maybeVehicle = driverOrVehicle.vehicle ? await driverOrVehicle.vehicle : driverOrVehicle;
+
+        // If the relationship resolved to null/undefined, fall back to the original
+        // object. Otherwise use the resolved vehicle.
+        const vehicle = maybeVehicle ?? driverOrVehicle;
 
         console.log('[vehicle]', vehicle);
 
         // Create vroom compatible instance
         return {
             id,
-            start: vehicle.get('coordinates'),
+            start: vehicle.get('location.coordinates'),
         };
     }
 
@@ -73,7 +84,7 @@ export default class VroomService extends RouteOptimizationInterfaceService {
         console.log('[waypoint]', waypoint);
         return {
             id,
-            location: waypoint.get('place.coordinates'),
+            location: waypoint.get('place.location.coordinates'),
         };
     }
 }

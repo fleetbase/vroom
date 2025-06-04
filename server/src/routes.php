@@ -29,6 +29,8 @@ Route::prefix(config('vroom.api.routing.prefix', 'vroom'))->namespace('Fleetbase
                     function ($router) {
                         $router->post('solve', 'VroomController@solve');
                         $router->post('plan', 'VroomController@plan');
+                        $router->post('settings', 'VroomController@saveSettings');
+                        $router->get('settings', 'VroomController@getSettings');
                     }
                 );
             }

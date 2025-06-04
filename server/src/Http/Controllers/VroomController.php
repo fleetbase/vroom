@@ -3,7 +3,9 @@
 namespace Fleetbase\Vroom\Http\Controllers;
 
 use Fleetbase\Http\Controllers\Controller;
+use Fleetbase\Models\Setting;
 use Fleetbase\Vroom\Exceptions\VroomApiException;
+use Fleetbase\Vroom\Support\Utils;
 use Fleetbase\Vroom\Support\Vroom;
 use Illuminate\Http\Request;
 
@@ -25,13 +27,15 @@ class VroomController extends Controller
     /**
      * Solve a vehicle routing problem.
      *
-     * Endpoint: POST /vroom/solve
+     * Endpoint: POST /vroom/int/v1/solve
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function solve(Request $request)
     {
         $payload = $request->all();
+
+        $this->vroom->setApiKey(Utils::getVroomSetting('api_key'));
 
         try {
             $result = $this->vroom->solve($payload);
@@ -49,13 +53,15 @@ class VroomController extends Controller
     /**
      * Plan pre-ordered routes and get ETAs.
      *
-     * Endpoint: POST /vroom/plan
+     * Endpoint: POST /vroom/int/v1/plan
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function plan(Request $request)
     {
         $payload = $request->all();
+
+        $this->vroom->setApiKey(Utils::getVroomSetting('api_key'));
 
         try {
             $result = $this->vroom->plan($payload);
@@ -68,5 +74,37 @@ class VroomController extends Controller
         } catch (\Exception $e) {
             return response()->error(config('app.debug') ? $e->getMessage() : 'VROOM API request failed.');
         }
+    }
+
+    /**
+     * Get VROOM settings.
+     *
+     * Endpoint: GET /vroom/int/v1/settings
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSettings()
+    {
+        $vroomSettings = Setting::lookupCompany('vroom', ['api_key' => null]);
+
+        return response()->json($vroomSettings);
+    }
+
+    /**
+     * Save VROOM settings.
+     *
+     * Endpoint: POST /vroom/int/v1/settings
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveSettings(Request $request)
+    {
+        $apiKey = $request->input('api_key');
+        Setting::configureCompany('vroom', ['api_key' => $apiKey]);
+
+        return response()->json([
+            'status'  => 'ok',
+            'message' => 'VROOM settings succesfully saved.',
+        ]);
     }
 }
