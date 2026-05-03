@@ -3,7 +3,6 @@
 namespace Fleetbase\Vroom\Http\Controllers;
 
 use Fleetbase\Http\Controllers\Controller;
-use Fleetbase\Models\Setting;
 use Fleetbase\Vroom\Exceptions\VroomApiException;
 use Fleetbase\Vroom\Support\Utils;
 use Fleetbase\Vroom\Support\Vroom;
@@ -35,7 +34,10 @@ class VroomController extends Controller
     {
         $payload = $request->all();
 
-        $this->vroom->setApiKey(Utils::getVroomSetting('api_key'));
+        $this->vroom
+            ->setApiKey(Utils::resolveApiKey())
+            ->setBaseUri(Utils::resolveBaseUri())
+            ->setEndpointMode(Utils::resolveEndpointMode());
 
         try {
             $result = $this->vroom->solve($payload);
@@ -61,7 +63,10 @@ class VroomController extends Controller
     {
         $payload = $request->all();
 
-        $this->vroom->setApiKey(Utils::getVroomSetting('api_key'));
+        $this->vroom
+            ->setApiKey(Utils::resolveApiKey())
+            ->setBaseUri(Utils::resolveBaseUri())
+            ->setEndpointMode(Utils::resolveEndpointMode());
 
         try {
             $result = $this->vroom->plan($payload);
@@ -85,7 +90,22 @@ class VroomController extends Controller
      */
     public function getSettings()
     {
-        $vroomSettings = Setting::lookupCompany('vroom', ['api_key' => null]);
+        $vroomSettings = Utils::getOrganizationSettings([
+            'api_key'       => null,
+            'api_host'      => null,
+            'endpoint_mode' => null,
+        ]);
+
+        return response()->json($vroomSettings);
+    }
+
+    public function getAdminSettings()
+    {
+        $vroomSettings = Utils::getSystemSettings([
+            'api_key'       => config('vroom.api_key', env('VROOM_API_KEY')),
+            'api_host'      => config('vroom.base_uri', env('VROOM_HOST', 'https://api.verso-optim.com/vrp/v1')),
+            'endpoint_mode' => config('vroom.endpoint_mode', env('VROOM_ENDPOINT_MODE', 'saas')),
+        ]);
 
         return response()->json($vroomSettings);
     }
@@ -99,8 +119,27 @@ class VroomController extends Controller
      */
     public function saveSettings(Request $request)
     {
-        $apiKey = $request->input('api_key');
-        Setting::configureCompany('vroom', ['api_key' => $apiKey]);
+        $settings = [
+            'api_key'       => $request->input('api_key'),
+            'api_host'      => $request->input('api_host'),
+            'endpoint_mode' => $request->input('endpoint_mode'),
+        ];
+        \Fleetbase\Models\Setting::configureCompany('vroom', $settings);
+
+        return response()->json([
+            'status'  => 'ok',
+            'message' => 'VROOM settings succesfully saved.',
+        ]);
+    }
+
+    public function saveAdminSettings(Request $request)
+    {
+        $settings = [
+            'api_key'       => $request->input('api_key', config('vroom.api_key', env('VROOM_API_KEY'))),
+            'api_host'      => $request->input('api_host', config('vroom.base_uri', env('VROOM_HOST', 'https://api.verso-optim.com/vrp/v1'))),
+            'endpoint_mode' => $request->input('endpoint_mode', config('vroom.endpoint_mode', env('VROOM_ENDPOINT_MODE', 'saas'))),
+        ];
+        \Fleetbase\Models\Setting::configure('vroom', $settings);
 
         return response()->json([
             'status'  => 'ok',

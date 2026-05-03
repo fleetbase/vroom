@@ -1,0 +1,27 @@
+{{#if this.isActive}}
+    <ContentPanel @title="Configure VROOM" @open={{true}} @wrapperClass="bordered-classic">
+        <InputGroup @name="Organization Override">
+            <Checkbox @value={{this.useOwnServer}} @label="Use my own VROOM server" @onToggle={{fn (mut this.useOwnServer)}} @alignItems="center" @labelClass="mb-0i" />
+        </InputGroup>
+
+        {{#if this.useOwnServer}}
+            <InputGroup @name="VROOM API Key" @helpText="Optional organization-specific API key override.">
+                <Input @value={{this.apiKey}} placeholder="Enter organization VROOM API key" class="w-full form-input" />
+            </InputGroup>
+            <InputGroup @name="VROOM API Host" @helpText="Organization-specific VROOM host override.">
+                <Input @value={{this.apiHost}} placeholder="https://your-vroom-host.example.com" class="w-full form-input" />
+            </InputGroup>
+            <InputGroup @name="VROOM Endpoint Mode" @helpText="Choose whether this organization uses a SaaS /solve endpoint or a direct binary host.">
+                <Select
+                    @value={{this.endpointMode}}
+                    @options={{array (hash label="SaaS / Express" value="saas") (hash label="Open Source Binary" value="binary")}}
+                    @optionLabel="label"
+                    @optionValue="value"
+                    @onSelect={{fn (mut this.endpointMode)}}
+                    @placeholder="Select organization endpoint mode"
+                    class="w-full"
+                />
+            </InputGroup>
+        {{/if}}
+    </ContentPanel>
+{{/if}}

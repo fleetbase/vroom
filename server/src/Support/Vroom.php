@@ -21,16 +21,38 @@ class Vroom
     protected ?string $apiKey = null;
 
     /**
+     * Endpoint mode for request construction.
+     */
+    protected string $endpointMode = 'saas';
+
+    /**
      * Initialize base URI and API key from config.
      */
     public function __construct()
     {
         $this->baseUri = config('vroom.base_uri', 'https://api.verso-optim.com/vrp/v1');
+        $this->endpointMode = config('vroom.endpoint_mode', 'saas');
     }
 
     public function setApiKey(?string $apiKey)
     {
         $this->apiKey = $apiKey;
+
+        return $this;
+    }
+
+    public function setBaseUri(?string $baseUri)
+    {
+        if ($baseUri) {
+            $this->baseUri = $baseUri;
+        }
+
+        return $this;
+    }
+
+    public function setEndpointMode(?string $endpointMode)
+    {
+        $this->endpointMode = in_array($endpointMode, ['saas', 'binary']) ? $endpointMode : 'saas';
 
         return $this;
     }
@@ -71,12 +93,30 @@ class Vroom
      */
     protected function post(string $endpoint, array $payload): array
     {
-        $response = Http::timeout(30)->post("{$this->baseUri}/{$endpoint}?api_key={$this->apiKey}", $payload);
+        $url = $this->buildEndpointUrl($endpoint);
+        $request = Http::timeout(30);
+
+        if ($this->apiKey) {
+            $request = $request->withQueryParameters(['api_key' => $this->apiKey]);
+        }
+
+        $response = $request->post($url, $payload);
 
         if (!$response->successful()) {
             throw new VroomApiException($endpoint, $response);
         }
 
         return $response->json();
+    }
+
+    protected function buildEndpointUrl(string $endpoint): string
+    {
+        $baseUri = rtrim($this->baseUri, '/');
+
+        if ($this->endpointMode === 'binary') {
+            return $baseUri;
+        }
+
+        return "{$baseUri}/{$endpoint}";
     }
 }
