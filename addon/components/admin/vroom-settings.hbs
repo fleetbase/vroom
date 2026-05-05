@@ -1,0 +1,23 @@
+<ContentPanel @title="Configure VROOM" @open={{true}} @wrapperClass="bordered-classic">
+    <InputGroup @name="VROOM API Key" @helpText="Optional API key for the system-wide VROOM service.">
+        <Input @value={{this.apiKey}} placeholder="Enter system VROOM API key" class="w-full form-input" />
+    </InputGroup>
+    <InputGroup @name="VROOM API Host" @helpText="Base URL for the default VROOM service used by organizations that do not define an override.">
+        <Input @value={{this.apiHost}} placeholder="https://api.verso-optim.com/vrp/v1" class="w-full form-input" />
+    </InputGroup>
+    <InputGroup @name="VROOM Endpoint Mode" @helpText="Use SaaS for services that expose /solve and /plan, or Binary for self-hosted HTTP servers that receive requests directly at the configured host.">
+        <Select
+            @value={{this.endpointMode}}
+            @options={{array (hash label="SaaS / Express" value="saas") (hash label="Open Source Binary" value="binary")}}
+            @optionLabel="label"
+            @optionValue="value"
+            @onSelect={{fn (mut this.endpointMode)}}
+            @placeholder="Select default endpoint mode"
+            class="w-full"
+        />
+    </InputGroup>
+
+    <div class="mt-4">
+        <Button @text="Save VROOM Settings" @type="primary" @size="sm" @icon="save" @onClick={{perform this.saveVroomSettings}} @isLoading={{this.saveVroomSettings.isRunning}} />
+    </div>
+</ContentPanel>

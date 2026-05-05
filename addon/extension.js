@@ -5,8 +5,9 @@ export default {
         // Register VROOM Route Optimization
         universe.whenEngineLoaded('@fleetbase/fleetops-engine', this.registerVroom);
 
-        // Register settings component
-        universe.registerRenderableComponent('fleet-ops:template:settings:routing', new ExtensionComponent('@fleetbase/vroom-engine', 'vroom-settings'));
+        // Register settings components
+        universe.registerRenderableComponent('fleet-ops:template:settings:routing', new ExtensionComponent('@fleetbase/vroom-engine', 'organization/vroom-settings'));
+        universe.registerRenderableComponent('fleet-ops:component:admin:routing-settings', new ExtensionComponent('@fleetbase/vroom-engine', 'admin/vroom-settings'));
     },
 
     async registerVroom(fleetopsEngine, universe) {
