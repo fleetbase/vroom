@@ -1,5 +1,8 @@
 name: Ember.js CI
 
+env:
+  NODE_VERSION: 22.x
+
 on:
   push:
     branches: [ main ]
@@ -12,17 +15,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x]  # Build on Node.js 18
-
     steps:
     - uses: actions/checkout@v2
 
-    - name: Setup Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v2
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v2.0.1
@@ -45,8 +44,7 @@ jobs:
     - name: Setup Node.js 18.x
       uses: actions/setup-node@v2
       with:
-        node-version: 18.x
-
+        node-version: ${{ env.NODE_VERSION }}
     - name: Setup pnpm
       uses: pnpm/action-setup@v2.0.1
       with:
@@ -74,8 +72,7 @@ jobs:
       - name: Setup Node.js 18.x
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
-
+          node-version: ${{ env.NODE_VERSION }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.0.1
         with:
@@ -105,8 +102,7 @@ jobs:
       - name: Setup Node.js 18.x
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
-
+          node-version: ${{ env.NODE_VERSION }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.0.1
         with:
@@ -122,7 +118,7 @@ jobs:
         run: npm i -g @fleetbase/cli npm-cli-login
 
       - name: Login to Fleetbase Registry
-        run: npm-cli-login -u ${{SECRETS.FLEETBASE_REGISTRY_USERNAME}} -p ${{SECRETS.FLEETBASE_REGISTRY_PASSWORD}} -e ${{SECRETS.FLEETBASE_REGISTRY_EMAIL}} -r https://registry.fleetbase.io
+        run: npm-cli-login -u ${{ secrets.FLEETBASE_REGISTRY_USERNAME }} -p ${{ secrets.FLEETBASE_REGISTRY_PASSWORD }} -e ${{ secrets.FLEETBASE_REGISTRY_EMAIL }} -r https://registry.fleetbase.io
 
       - name: Publish to Fleetbase registry
         run: flb publish
@@ -137,8 +133,7 @@ jobs:
       - name: Setup Node.js 18.x
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
-
+          node-version: ${{ env.NODE_VERSION }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.0.1
         with:
@@ -154,7 +149,7 @@ jobs:
         run: npm i -g @fleetbase/cli npm-cli-login
 
       - name: Login to Fleetbase Registry
-        run: npm-cli-login -u ${{SECRETS.FLEETBASE_QA_REGISTRY_USERNAME}} -p ${{SECRETS.FLEETBASE_QA_REGISTRY_PASSWORD}} -e ${{SECRETS.FLEETBASE_QA_REGISTRY_EMAIL}} -r https://registry.qa.fleetbase.io
+        run: npm-cli-login -u ${{ secrets.FLEETBASE_QA_REGISTRY_USERNAME }} -p ${{ secrets.FLEETBASE_QA_REGISTRY_PASSWORD }} -e ${{ secrets.FLEETBASE_QA_REGISTRY_EMAIL }} -r https://registry.qa.fleetbase.io
 
       - name: Publish to Fleetbase registry
         run: flb publish --registry https://registry.qa.fleetbase.io
