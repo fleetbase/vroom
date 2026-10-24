@@ -22,7 +22,7 @@ class Utils extends FleetbaseUtils
         $organizationSettings = static::getOrganizationSettings();
         $organizationValue    = data_get($organizationSettings, $key);
 
-        if (static::hasConfiguredValue($organizationValue)) {
+        if (static::hasConfiguredValue($organizationValue) && static::organizationOverrideAllowed($organizationSettings)) {
             return $organizationValue;
         }
 
@@ -49,6 +49,17 @@ class Utils extends FleetbaseUtils
     public static function resolveEndpointMode(): string
     {
         return static::resolveSetting('endpoint_mode', config('vroom.endpoint_mode', env('VROOM_ENDPOINT_MODE', 'saas')));
+    }
+
+    /**
+     * An organization override whose host fails the host policy is ignored as a whole (host, key and endpoint mode),
+     * so values saved before the policy existed fall back to the system server.
+     */
+    public static function organizationOverrideAllowed(array $organizationSettings): bool
+    {
+        $host = data_get($organizationSettings, 'api_host');
+
+        return !static::hasConfiguredValue($host) || HostPolicy::allows($host);
     }
 
     /**
