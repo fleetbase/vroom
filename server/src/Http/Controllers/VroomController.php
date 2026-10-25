@@ -5,6 +5,7 @@ namespace Fleetbase\Vroom\Http\Controllers;
 use Fleetbase\Http\Controllers\Controller;
 use Fleetbase\Models\Setting;
 use Fleetbase\Vroom\Exceptions\VroomApiException;
+use Fleetbase\Vroom\Support\HostPolicy;
 use Fleetbase\Vroom\Support\Utils;
 use Fleetbase\Vroom\Support\Vroom;
 use Fleetbase\Vroom\Traits\AuthorizesMethods;
@@ -136,6 +137,7 @@ class VroomController extends Controller
 
     /**
      * Save the organization's VROOM override. An empty `api_key` keeps the stored key; `clear_api_key` removes it.
+     * The host must pass the host policy (public http(s) addresses only), or the request fails with 422.
      *
      * Endpoint: POST /vroom/int/v1/settings
      *
@@ -143,6 +145,11 @@ class VroomController extends Controller
      */
     public function saveSettings(Request $request)
     {
+        $apiHost = $request->input('api_host');
+        if (is_string($apiHost) && trim($apiHost) !== '' && ($violation = HostPolicy::violation($apiHost))) {
+            return response()->json(['errors' => [$violation]], 422);
+        }
+
         $stored   = Utils::getOrganizationSettings();
         $settings = [
             'api_key'       => Utils::submittedApiKey($request->all(), data_get($stored, 'api_key')),

@@ -6,6 +6,8 @@ use Fleetbase\Models\Setting;
 use Fleetbase\Models\User;
 use Fleetbase\Vroom\Http\Controllers\VroomController;
 use Fleetbase\Vroom\Support\Authorization;
+use Fleetbase\Vroom\Support\HostPolicy;
+use Fleetbase\Vroom\Support\Utils;
 use Fleetbase\Vroom\Support\Vroom;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -20,12 +22,16 @@ class SettingsAuthorizationTest extends TestCase
         Setting::query()->delete();
         app('session')->put('company', 'company-1');
         config(['vroom.api_key' => null]);
+
+        // Every example host resolves to a public address unless a test says otherwise.
+        HostPolicy::resolveHostsUsing(fn (string $host) => $host === 'internal.example.com' ? ['10.0.0.12'] : ['93.184.216.34']);
     }
 
     protected function tearDown(): void
     {
         Authorization::resolveUserUsing(null);
         Authorization::resolvePermissionsUsing(null);
+        HostPolicy::resolveHostsUsing(null);
         app('session')->flush();
 
         parent::tearDown();
@@ -186,6 +192,58 @@ class SettingsAuthorizationTest extends TestCase
         $this->signInAs($this->user('admin'));
 
         $this->assertSame(200, $this->call('saveSettings', ['api_host' => 'https://org.example.com'])->getStatusCode());
+    }
+
+    public static function blockedOrganizationHosts(): array
+    {
+        return [
+            'cloud metadata'      => ['http://169.254.169.254/latest/meta-data'],
+            'loopback'            => ['http://127.0.0.1:3000'],
+            'resolves to private' => ['https://internal.example.com'],
+            'file scheme'         => ['file:///etc/passwd'],
+        ];
+    }
+
+    /**
+     * @dataProvider blockedOrganizationHosts
+     */
+    public function testSavingOrganizationSettingsRejectsHostsTheServerMustNotCall(string $host): void
+    {
+        $this->signInAs($this->user(), ['fleet-ops update routing-settings']);
+        Setting::configureCompany('vroom', ['api_key' => 'org-secret', 'api_host' => 'https://org.example.com', 'endpoint_mode' => 'saas']);
+
+        $response = $this->call('saveSettings', ['api_host' => $host, 'api_key' => 'new-secret', 'endpoint_mode' => 'binary']);
+
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame(['api_key' => 'org-secret', 'api_host' => 'https://org.example.com', 'endpoint_mode' => 'saas'], Setting::lookupCompany('vroom'));
+    }
+
+    public function testSavingOrganizationSettingsAllowsPrivateHostsWhenConfigured(): void
+    {
+        $this->signInAs($this->user(), ['fleet-ops update routing-settings']);
+        config(['vroom.allow_private_hosts' => true]);
+
+        try {
+            $this->assertSame(200, $this->call('saveSettings', ['api_host' => 'http://vroom:3000'])->getStatusCode());
+        } finally {
+            config(['vroom.allow_private_hosts' => false]);
+        }
+    }
+
+    public function testRuntimeIgnoresAStoredOrganizationOverrideWhoseHostIsBlocked(): void
+    {
+        Setting::configure('vroom', ['api_key' => 'system-secret', 'api_host' => 'https://routing.example.com/vrp/v1', 'endpoint_mode' => 'saas']);
+        Setting::configureCompany('vroom', ['api_key' => 'org-secret', 'api_host' => 'http://169.254.169.254', 'endpoint_mode' => 'binary']);
+
+        $this->assertSame('https://routing.example.com/vrp/v1', Utils::resolveBaseUri());
+        $this->assertSame('system-secret', Utils::resolveApiKey());
+        $this->assertSame('saas', Utils::resolveEndpointMode());
+
+        Setting::configureCompany('vroom', ['api_key' => 'org-secret', 'api_host' => 'https://org.example.com', 'endpoint_mode' => 'binary']);
+
+        $this->assertSame('https://org.example.com', Utils::resolveBaseUri());
+        $this->assertSame('org-secret', Utils::resolveApiKey());
+        $this->assertSame('binary', Utils::resolveEndpointMode());
     }
 
     protected function user(string $type = 'user'): User
