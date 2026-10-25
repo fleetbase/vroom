@@ -1,7 +1,19 @@
 <ContentPanel @title="Configure VROOM" @open={{true}} @wrapperClass="bordered-classic">
-    <InputGroup @name="VROOM API Key" @helpText="Optional API key for the system-wide VROOM service.">
-        <Input @value={{this.apiKey}} placeholder="Enter system VROOM API key" class="w-full form-input" />
+    <InputGroup @name="VROOM API Key" @helpText={{this.apiKeyHelpText}}>
+        <Input
+            @type="password"
+            @value={{this.apiKey}}
+            placeholder={{if this.hasApiKey "Saved key hidden. Enter a new key to replace it" "Enter system VROOM API key"}}
+            autocomplete="new-password"
+            disabled={{this.clearApiKey}}
+            class="w-full form-input"
+        />
     </InputGroup>
+    {{#if this.hasApiKey}}
+        <InputGroup>
+            <Checkbox @value={{this.clearApiKey}} @label="Remove the saved API key" @onToggle={{fn (mut this.clearApiKey)}} @alignItems="center" @labelClass="mb-0i" />
+        </InputGroup>
+    {{/if}}
     <InputGroup @name="VROOM API Host" @helpText="Base URL for the default VROOM service used by organizations that do not define an override.">
         <Input @value={{this.apiHost}} placeholder="https://api.verso-optim.com/vrp/v1" class="w-full form-input" />
     </InputGroup>
