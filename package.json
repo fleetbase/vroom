@@ -1,6 +1,6 @@
 {
     "name": "@fleetbase/vroom-engine",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "VROOM route optimization machine extension for Fleetbase",
     "keywords": [
         "fleetbase-extension",
