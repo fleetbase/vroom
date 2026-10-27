@@ -13,6 +13,7 @@
   - The Ember CI lints.
   - A `pnpm-workspace.yaml` (`allowBuilds`) fixes `ERR_PNPM_IGNORED_BUILDS` under pnpm 11, which had failed every Ember CI run on `main`.
   - PHP tests run again (#8).
+- **Dependencies:** `@fleetbase/ember-core` 0.3.26 and `@fleetbase/ember-ui` 0.4.6, the same as Fleet-Ops.
 
 ---
 ## Upgrading
