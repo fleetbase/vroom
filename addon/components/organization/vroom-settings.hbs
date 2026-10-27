@@ -5,9 +5,24 @@
         </InputGroup>
 
         {{#if this.useOwnServer}}
-            <InputGroup @name="VROOM API Key" @helpText="Optional organization-specific API key override.">
-                <Input @value={{this.apiKey}} placeholder="Enter organization VROOM API key" class="w-full form-input" />
+            <InputGroup
+                @name="VROOM API Key"
+                @helpText={{if this.hasApiKey "An organization API key is saved. It is never shown; leave this blank to keep it." "Optional organization-specific API key override."}}
+            >
+                <Input
+                    @type="password"
+                    @value={{this.apiKey}}
+                    placeholder={{if this.hasApiKey "Saved key hidden. Enter a new key to replace it" "Enter organization VROOM API key"}}
+                    autocomplete="new-password"
+                    disabled={{this.clearApiKey}}
+                    class="w-full form-input"
+                />
             </InputGroup>
+            {{#if this.hasApiKey}}
+                <InputGroup>
+                    <Checkbox @value={{this.clearApiKey}} @label="Remove the saved API key" @onToggle={{fn (mut this.clearApiKey)}} @alignItems="center" @labelClass="mb-0i" />
+                </InputGroup>
+            {{/if}}
             <InputGroup @name="VROOM API Host" @helpText="Organization-specific VROOM host override.">
                 <Input @value={{this.apiHost}} placeholder="https://your-vroom-host.example.com" class="w-full form-input" />
             </InputGroup>

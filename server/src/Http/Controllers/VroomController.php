@@ -3,13 +3,18 @@
 namespace Fleetbase\Vroom\Http\Controllers;
 
 use Fleetbase\Http\Controllers\Controller;
+use Fleetbase\Models\Setting;
 use Fleetbase\Vroom\Exceptions\VroomApiException;
+use Fleetbase\Vroom\Support\HostPolicy;
 use Fleetbase\Vroom\Support\Utils;
 use Fleetbase\Vroom\Support\Vroom;
+use Fleetbase\Vroom\Traits\AuthorizesMethods;
 use Illuminate\Http\Request;
 
 class VroomController extends Controller
 {
+    use AuthorizesMethods;
+
     /**
      * The Vroom API wrapper instance.
      */
@@ -21,6 +26,16 @@ class VroomController extends Controller
     public function __construct(Vroom $vroom)
     {
         $this->vroom = $vroom;
+
+        // The system settings set the VROOM server every organization falls back to,
+        // so only system administrators may read or change them. Organization overrides
+        // sit on the Fleet-Ops routing settings page and use its permission.
+        $this->authorizeMethods([
+            'getSettings'       => ['fleet-ops view routing-settings', 'fleet-ops update routing-settings'],
+            'saveSettings'      => 'fleet-ops update routing-settings',
+            'getAdminSettings'  => 'admin',
+            'saveAdminSettings' => 'admin',
+        ]);
     }
 
     /**
@@ -82,7 +97,7 @@ class VroomController extends Controller
     }
 
     /**
-     * Get VROOM settings.
+     * Get the organization's VROOM override. The API key is reported as `has_api_key`, never returned.
      *
      * Endpoint: GET /vroom/int/v1/settings
      *
@@ -96,22 +111,33 @@ class VroomController extends Controller
             'endpoint_mode' => null,
         ]);
 
-        return response()->json($vroomSettings);
+        return response()->json(Utils::withoutApiKey($vroomSettings));
     }
 
+    /**
+     * Get the system VROOM settings. The API key is reported as `has_api_key`, never returned.
+     *
+     * Endpoint: GET /vroom/int/v1/admin-settings
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getAdminSettings()
     {
-        $vroomSettings = Utils::getSystemSettings([
-            'api_key'       => config('vroom.api_key', env('VROOM_API_KEY')),
+        $vroomSettings = Utils::withoutApiKey(Utils::getSystemSettings([
+            'api_key'       => null,
             'api_host'      => config('vroom.base_uri', env('VROOM_HOST', 'https://api.verso-optim.com/vrp/v1')),
             'endpoint_mode' => config('vroom.endpoint_mode', env('VROOM_ENDPOINT_MODE', 'saas')),
-        ]);
+        ]));
+
+        $environmentApiKey                        = config('vroom.api_key', env('VROOM_API_KEY'));
+        $vroomSettings['has_environment_api_key'] = is_string($environmentApiKey) && trim($environmentApiKey) !== '';
 
         return response()->json($vroomSettings);
     }
 
     /**
-     * Save VROOM settings.
+     * Save the organization's VROOM override. An empty `api_key` keeps the stored key; `clear_api_key` removes it.
+     * The host must pass the host policy (public http(s) addresses only), or the request fails with 422.
      *
      * Endpoint: POST /vroom/int/v1/settings
      *
@@ -119,12 +145,18 @@ class VroomController extends Controller
      */
     public function saveSettings(Request $request)
     {
+        $apiHost = $request->input('api_host');
+        if (is_string($apiHost) && trim($apiHost) !== '' && ($violation = HostPolicy::violation($apiHost))) {
+            return response()->json(['errors' => [$violation]], 422);
+        }
+
+        $stored   = Utils::getOrganizationSettings();
         $settings = [
-            'api_key'       => $request->input('api_key'),
+            'api_key'       => Utils::submittedApiKey($request->all(), data_get($stored, 'api_key')),
             'api_host'      => $request->input('api_host'),
             'endpoint_mode' => $request->input('endpoint_mode'),
         ];
-        \Fleetbase\Models\Setting::configureCompany('vroom', $settings);
+        Setting::configureCompany('vroom', $settings);
 
         return response()->json([
             'status'  => 'ok',
@@ -132,14 +164,22 @@ class VroomController extends Controller
         ]);
     }
 
+    /**
+     * Save the system VROOM settings. An empty `api_key` keeps the stored key; `clear_api_key` removes it.
+     *
+     * Endpoint: POST /vroom/int/v1/admin-settings
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function saveAdminSettings(Request $request)
     {
+        $stored   = Utils::getSystemSettings();
         $settings = [
-            'api_key'       => $request->input('api_key', config('vroom.api_key', env('VROOM_API_KEY'))),
+            'api_key'       => Utils::submittedApiKey($request->all(), data_get($stored, 'api_key')),
             'api_host'      => $request->input('api_host', config('vroom.base_uri', env('VROOM_HOST', 'https://api.verso-optim.com/vrp/v1'))),
             'endpoint_mode' => $request->input('endpoint_mode', config('vroom.endpoint_mode', env('VROOM_ENDPOINT_MODE', 'saas'))),
         ];
-        \Fleetbase\Models\Setting::configure('vroom', $settings);
+        Setting::configure('vroom', $settings);
 
         return response()->json([
             'status'  => 'ok',
