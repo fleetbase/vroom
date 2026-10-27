@@ -45,11 +45,7 @@ export default class OrganizationVroomSettingsComponent extends Component {
             this.endpointMode = endpoint_mode ?? 'saas';
             this.hasApiKey = Boolean(has_api_key);
             this.clearApiKey = false;
-            this.useOwnServer = Boolean(
-                this.hasApiKey ||
-                    (typeof api_host === 'string' && api_host.trim() !== '') ||
-                    (typeof endpoint_mode === 'string' && endpoint_mode.trim() !== '')
-            );
+            this.useOwnServer = Boolean(this.hasApiKey || (typeof api_host === 'string' && api_host.trim() !== '') || (typeof endpoint_mode === 'string' && endpoint_mode.trim() !== ''));
         } catch (err) {
             debug(`VROOM : Error fetching organization vroom settings: ${err.message}`);
         }
