@@ -1,26 +1,12 @@
-> v0.0.5 ~ "Locked-down settings and release CI"
+> v0.1.0 ~ "Laravel 12 and core-api 2.0"
 
 ---
 ## Highlights
 
-- **Security: the VROOM settings are locked down.** Before, any logged-in user could read the system API key and change the system host and endpoint mode used by every organization. That could send every organization's optimization payloads (orders, addresses, vehicles) to another server.
-  - Only system administrators can read or change the system settings.
-  - Organization settings need `fleet-ops update routing-settings`, or `view routing-settings` to read them.
-  - The API key is never sent back to the console. A blank key keeps the stored one, and "Remove the saved API key" clears it. (#8)
-- **Security: organization hosts must be public addresses.** A host that points at loopback, a private network or cloud metadata is refused on save. If one was saved earlier, it is ignored at request time and the system server is used. `VROOM_ALLOW_PRIVATE_HOSTS=true` turns this off for installs that run VROOM on their own network. (#9)
-- **Release CI like Fleet-Ops.**
-  - PRs into `release/v*` run the Ember and PHP CI.
-  - The Ember CI lints.
-  - A `pnpm-workspace.yaml` (`allowBuilds`) fixes `ERR_PNPM_IGNORED_BUILDS` under pnpm 11, which had failed every Ember CI run on `main`.
-  - PHP tests run again (#8).
-- **Dependencies:** `@fleetbase/ember-core` 0.3.26 and `@fleetbase/ember-ui` 0.4.6, the same as Fleet-Ops.
+- **Laravel 12.** The server package now runs on Laravel 12 with Carbon 3 and requires `fleetbase/core-api` ^2.0. It installs into the Laravel 12 Fleetbase API (fleetbase/fleetbase v0.8.0); Laravel 10 installs stay on the v0.0.5 line.
+- **No security advisory exceptions.** `composer audit` reports no advisories on the Laravel 12 dependency set, so the Composer advisory workarounds are gone.
 
 ---
 ## Upgrading
-- No migrations.
-- Organization settings now need the Fleet-Ops `routing-settings` permissions. Run `php artisan fleetbase:create-permissions` if they aren't seeded.
 
----
-## Need help?
-- [GitHub Discussions](https://github.com/fleetbase/fleetbase/discussions)
-- [Discord](https://discord.gg/HnTqQ6zAVn)
+- **Requires fleetbase/core-api v2.0.0** (Laravel 12, PHP 8.2 or later). Upgrade the API to fleetbase/fleetbase v0.8.0 first, then this extension.
